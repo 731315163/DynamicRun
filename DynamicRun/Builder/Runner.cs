@@ -6,7 +6,7 @@ namespace DynamicRun.Builder
 {
     internal class Runner
     {
-        public void Execute(byte[] compiledAssembly, string[] args)
+        public void Execute(Stream compiledAssembly, string[] args)
         {
             var assemblyLoadContextWeakRef = LoadAndExecute(compiledAssembly, args);
 
@@ -20,18 +20,18 @@ namespace DynamicRun.Builder
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static WeakReference LoadAndExecute(byte[] compiledAssembly, string[] args)
+        private static WeakReference LoadAndExecute(Stream asm, string[] args)
         {
-            using (var asm = new MemoryStream(compiledAssembly))
+            using (asm)
             {
-                var assemblyLoadContext = new SimpleUnloadableAssemblyLoadContext();
+                var assemblyLoadContext = new UnloadableAssemblyLoadContext();
 
                 var assembly = assemblyLoadContext.LoadFromStream(asm);
 
                 var entry = assembly.EntryPoint;
 
                 _ = entry != null && entry.GetParameters().Length > 0
-                    ? entry.Invoke(null, new object[] {args})
+                    ? entry.Invoke(null, new object[] { args })
                     : entry.Invoke(null, null);
 
                 assemblyLoadContext.Unload();
